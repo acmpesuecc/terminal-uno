@@ -2,6 +2,8 @@
 #include <stdlib.h>
 #include <conio.h>
 #include <string.h>
+#include <time.h>
+#include <conio.h>
 #include "player.h"
 #include "cards.h"
 #include <unistd.h>
@@ -116,6 +118,47 @@ int main(){
                     scanf(" %c%d",&C,&N);
                     if(canPlay(C,N,players[aux->id],discardPile.cards[discardPile.size-1])|| wild){
                         playCard(&players[aux->id],&discardPile,C,N);
+                        if (players[aux->id].size == 1 && !aux->has_shouted_uno) {
+                            printf("\n%s has one card left!\n", aux->name);
+                            printf("Other players have 5 seconds to call 'UNO' if %s doesn't!\n", aux->name);
+                            printf("%s, press 'U' to shout UNO within 5 seconds!\n", aux->name);
+                            
+                            time_t start_time = time(NULL);
+                            int uno_shouted = 0;
+                            int uno_called = 0;
+                            
+                            while (time(NULL) - start_time < 5) {
+                                if (kbhit()) {
+                                    char key = getch();
+                                    if (key == 'U' || key == 'u') {
+                                        uno_shouted = 1;
+                                        aux->has_shouted_uno = 1;
+                                        printf("%s shouted UNO!\n", aux->name);
+                                        break;
+                                    } else if (key == 'C' || key == 'c') {
+                                        uno_called = 1;
+                                        printf("Someone called out %s for not saying UNO!\n", aux->name);
+                                        break;
+                                    }
+                                }
+                            }
+                            
+                            if (!uno_shouted && !uno_called) {
+                                printf("Time's up!\n");
+                            }
+                            
+                            if (!uno_shouted) {
+                                printf("%s forgot to shout UNO! Drawing 2 cards as penalty.\n", aux->name);
+                                dealCard(&mainDeck, &players[aux->id]);
+                                dealCard(&mainDeck, &players[aux->id]);
+                            } else if (uno_called) {
+                                printf("%s was too slow! Drawing 2 cards as penalty.\n", aux->name);
+                                dealCard(&mainDeck, &players[aux->id]);
+                                dealCard(&mainDeck, &players[aux->id]);
+                            }
+                            
+                            sleep(3);  // Give players time to read the outcome
+                        }
                         if(players[aux->id].size != 0){
                             if(discardPile.cards[discardPile.size-1].value == 10){
                                 if(dir==0)aux=aux->next;
@@ -214,14 +257,12 @@ int main(){
                     }
 
                     
-                }else if(action == 2){
+                } else if(action == 2){
                     dealCard(&mainDeck,&players[aux->id]);
+                    aux->has_shouted_uno = 0;  // Reset UNO flag when drawing a card
                     if(dir==0)aux=aux->next;
                     else aux= aux->prev;
                 }
-
-                
-
             }
             system("cls");
             printf("==== CONGRATULATIONS ");

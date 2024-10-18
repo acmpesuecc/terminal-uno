@@ -18,6 +18,7 @@ typedef struct player_node
     int id;
     char name[20];
     int remaining_cards;
+    int has_shouted_uno;  // New field
     struct player_node* next;
     struct player_node* prev;
 }PLAYER;

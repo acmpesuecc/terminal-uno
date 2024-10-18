@@ -37,7 +37,7 @@ void printCard(Card card) {
         case 'Y': color = "\033[0;33mY\033[0m"; break;
         default: color = "W"; break;
     }
-    
+
     switch(card.value) {
         case 10: value = "S"; break;
         case 11: value = "R"; break;
@@ -102,3 +102,4 @@ void printDrawPile() {
     printf("│███████ │ │\n");
     printf("│███████ └─┘\n");
     printf("└─────────┘\n");
+}
