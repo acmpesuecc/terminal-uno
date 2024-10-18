@@ -87,7 +87,9 @@ int main(){
             shuffleCardStack(&mainDeck);
             dir = 0;
             system("cls");
-            printf("=== PLAYERS ==========================\n");
+            printf("Welcome to the game!Let's begin\n");
+            printf("Rules\n1.Enter the number of players\n2.Enter all the player names.\n3.Enter any key\n4.It will show that player's last played card and the cards in their hand\n5.Then the user has 2 options to choose from (Play or draw card)\n6.Enter the card code and continue the game");
+            printf("============ PLAYERS =================\n");
             printf("Enter number of players in session: ");
             scanf("%d",&number_of_players);
             
