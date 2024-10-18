@@ -6,7 +6,7 @@
 #include <conio.h>
 #include "player.h"
 #include "cards.h"
-#include <unistd.h>
+#include <windows.h>
 
 void display_how_to_play()
 {
@@ -157,7 +157,7 @@ int main(){
                                 dealCard(&mainDeck, &players[aux->id]);
                             }
                             
-                            sleep(3);  // Give players time to read the outcome
+                            Sleep(3000);  // Give players time to read the outcome (Sleep takes milliseconds)
                         }
                         if(players[aux->id].size != 0){
                             if(discardPile.cards[discardPile.size-1].value == 10){
@@ -269,7 +269,7 @@ int main(){
             search_player_name(head,win);
             printf(" !!! ====\n\n");
             printf("You've have won this game\n");
-            sleep(5);
+            Sleep(5000);
             break;
         case 'h':
         system("cls");
@@ -285,7 +285,7 @@ int main(){
         printf("Arun - Card structure and functions using Stack\n");
         printf("Anumitha - Display elements and UI design\n");
         printf("Ankitha - Player turn management and game Logic\n");
-        sleep(10);
+        Sleep(10000);
         system("cls");        
         break;
         case 'x':
