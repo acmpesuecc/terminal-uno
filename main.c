@@ -6,9 +6,44 @@
 #include "cards.h"
 #include <unistd.h>
 
+typedef struct settings //Struct for settings
+{
+    int sandwiching;
+    int no_stack_p2;
+}SETTINGS;
+
+SETTINGS gameSettings = {1,1};  //Default values
+
 void display_how_to_play()
 {
     printf("\n\n                                                               \033[0;34mHOW TO PLAY\033[0m                                                \n\n                                                \033[0;31m*****************************************\033[0m\n\nUNO is a popular card game that has been enjoyed by people across the globe. The game was originally developed in 1971.\n\nThe main objective of UNO is to be the first player to play all your cards.\nUNO is a game that blends elements of strategy with a touch of luck.\n\nA standard UNO deck consists of 108 cards.\nThese cards are divided into four colors: Red, Yellow, Green, and Blue (depicted as R, Y, G, B in-game).\n\nEach color has numbers from 0 to 9, as well as special action cards.\nThe special cards are:\n\033[0;33mSkip:\033[0m skipping a player's turn\n\033[0;33mReverse:\033[0m reversing the order of play\n\033[0;33mDraw 2:\033[0m forcing the next player to draw 2 cards\n\033[0;33mWild card:\033[0m Allows players to change the color of the card to be played\n\033[0;33mWild Draw Four:\033[0m Similar to the wild card but forces the next player to draw 4 cards and forfeit their turn\n\n\033[0;32mSetup:\033[0m\n1. First shuffle the deck of cards and deal 7 cards to each player.\n2. Next place the remaining deck face down on the table to form the draw pile.\n3. Finally, turn the top card from the draw pile face up next to create a discard pile and start the game.\n\n\033[0;32mGameplay:\033[0m\n- First, the players take turns playing a card that matches the top card of the discard pile in either color or number.\n- If a player cannot play the card they have, they must draw a card from the draw pile. If that card can be played, they may play it immediately. Otherwise, their turn comes to an end.\n\n- When a player has only one card left, they must say 'UNO' and alert the other players. \nIf they fail to do so and get caught, it results in a penalty of drawing two cards.\n- The first player to play all their cards wins.\n\n                                                \033[0;31m*****************************************\033[0m");
+}
+
+void display_settings()
+{
+    printf("======SETTINGS=====\n");
+    printf("Press 1 to toggle sandwiching rule and 2 to toggle 'No stackable +2' rule\n");
+    printf("Sandwiching rule [%s]\n", gameSettings.sandwiching ? "NO" : "OFF");
+    printf("No stackable +2 [%s]\n", gameSettings.no_stack_p2 ? "NO" : "OFF");
+
+    char choice = getInput();
+    switch(choice)
+    {
+        case '1':
+        {
+            gameSettings.sandwiching = !gameSettings.sandwiching;
+            break;
+        }
+        case '2':
+        {
+            gameSettings.no_stack_p2 = !gameSettings.no_stack_p2;
+            break;
+        }
+        default:
+        {
+            return;
+        }
+    }
 }
 
 void arrow1(int optPos, int curPos){
@@ -19,6 +54,7 @@ void menuDesc(int i,int x){
         if(i == 1 && x == 1 )printf("    (Start a new game)\n\n");
         else if(i == 2 && x == 2 )printf("      (New to the Game?)\n\n");
         else if(i == 3 && x == 3 )printf("          (The Devs)\n\n");
+        else if(i == 4 && x == 4 )printf("              (Settings)\n\n");
         else printf("\n\n");
 };
 
@@ -32,7 +68,8 @@ char renderMainMenu() {
         arrow1(1,x);printf(" \033[0;32m[c]\033[0m Create a Session");menuDesc(1,x);
         arrow1(2,x);printf(" \033[0;34m[h]\033[0m How to play");menuDesc(2,x);
         arrow1(3,x);printf(" \033[0;33m[r]\033[0m Credits");menuDesc(3,x);
-        arrow1(4,x);printf(" \033[0;31m[x]\033[0m Quit\n");
+        arrow1(4,x);printf(" \033[0;35m[s]\033[0m Settings"); menuDesc(4, x);
+        arrow1(5,x);printf(" \033[0;31m[x]\033[0m Quit\n");
         printf("[Use Arrow keys to select]");
         char ch = getch();
         switch(ch){
@@ -44,7 +81,8 @@ char renderMainMenu() {
             if(x==1)return 'c';
             if(x==2)return 'h';
             if(x==3)return 'r';
-            if(x==4)return 'x';
+            if(x==4)return 's';
+            if(x==5)return 'x';
             break;
         }
     }
@@ -53,13 +91,24 @@ char renderMainMenu() {
 int canPlay(char C, int N, struct CardStack stk,struct Card last){
     int chk1=0,chk2=0;
     for (int i = 0; i < stk.size; i++) {
-        if((stk.cards[i].col == C) && (stk.cards[i].value == N)) {chk1 = 1;break;}
+        if((stk.cards[i].col == C) && (stk.cards[i].value == N)) {
+            chk1 = 1;
+            break;
+        }
     }
     if((last.col == C) || (last.value == N) || (last.col = 'N')) chk2 = 1;
 
     if(chk1 && chk2){
         return 1;
     }else return 0;
+}
+
+char getInput() {
+    char ch;
+    printf("[Use W/S to select, Enter to choose]: ");
+    ch = getchar();
+    while (getchar() != '\n');  //clear buffer
+    return ch;
 }
 
 int main(){
@@ -114,18 +163,38 @@ int main(){
                 if(action == 1){
                     printf("Enter Card Code: ");
                     scanf(" %c%d",&C,&N);
-                    if(canPlay(C,N,players[aux->id],discardPile.cards[discardPile.size-1])|| wild){
+                    if(canPlay(C,N,players[aux->id],discardPile.cards[discardPile.size-1])|| wild && !(gameSettings.no_stack_p2 && discardPile.cards[discardPile.size - 1].value == 12 && N == 12))
+                    {
                         playCard(&players[aux->id],&discardPile,C,N);
                         if(players[aux->id].size != 0){
                             if(discardPile.cards[discardPile.size-1].value == 10){
-                                if(dir==0)aux=aux->next;
-                                else aux= aux->prev;
+                                if(gameSettings.sandwiching){   //Checking sandwich 
+                                    while (C == discardPile.cards[discardPile.size - 1].col) {
+                                    playCard(&players[aux->id], &discardPile, C, N);
+                                    printf("Played [%s%d]. Enter another card of the same color or 'q' to stop: ", discardPile.cards[discardPile.size - 1].color, discardPile.cards[discardPile.size - 1].value);
+                                    char choice[5];
+                                    scanf(" %s", choice);
+                                    if (strcmp(choice, "q") == 0) break;
+                                    scanf(choice, "%c%d", &C, &N);
+                                }else{
+                                    playCard(&players[aux->id], &discardPile, C, N);
+                                }
                             }
-                            if(discardPile.cards[discardPile.size-1].value == 11){
+
+                            if(discardPile.cards[discardPile.size-1].value == 10)   //skip
+                            {
+                                if(dir == 0){
+                                    aux = aux->next;
+                                }else{
+                                    aux = aux->prev;
+                                }
+                            }
+
+                            if(discardPile.cards[discardPile.size-1].value == 11){  //reverse
                                 if(dir == 0)dir = 1;
                                 else dir = 0;
                             }
-                            if(discardPile.cards[discardPile.size-1].value == 12){
+                            if(discardPile.cards[discardPile.size-1].value == 12){  //draw 2
                                 if(dir == 0){
                                     dealCard(&mainDeck,&players[aux->next->id]);
                                     dealCard(&mainDeck,&players[aux->next->id]);
@@ -136,7 +205,7 @@ int main(){
                                 if(dir==0)aux=aux->next;
                                 else aux= aux->prev;
                             }
-                            if(discardPile.cards[discardPile.size-1].value == 13){
+                            if(discardPile.cards[discardPile.size-1].value == 13){  //wild card
                                 printf("Enter Color [R,B,G,Y]: ");
                                 scanf(" %c",&C);
                                 switch(C){
@@ -163,7 +232,7 @@ int main(){
                                 }
                                 
                             }
-                            if(discardPile.cards[discardPile.size-1].value == 14){
+                            if(discardPile.cards[discardPile.size-1].value == 14){  //wild draw 4
                                 if(dir == 0){
                                     dealCard(&mainDeck,&players[aux->next->id]);
                                     dealCard(&mainDeck,&players[aux->next->id]);
