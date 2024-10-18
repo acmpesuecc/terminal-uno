@@ -20,6 +20,7 @@ typedef struct player_node
     int remaining_cards;
     struct player_node* next;
     struct player_node* prev;
+    int active;
 }PLAYER;
 
 PLAYER* create_player(int id, char name[])     //create player node
@@ -30,6 +31,7 @@ PLAYER* create_player(int id, char name[])     //create player node
     new_player->remaining_cards = 7;
     new_player->next = NULL;
     new_player->prev = NULL;
+    new_player->active = 1;
     return new_player;
 }
 
