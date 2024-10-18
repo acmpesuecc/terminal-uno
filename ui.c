@@ -102,3 +102,4 @@ void printDrawPile() {
     printf("│███████ │ │\n");
     printf("│███████ └─┘\n");
     printf("└─────────┘\n");
+}
