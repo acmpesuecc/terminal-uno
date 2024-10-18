@@ -67,10 +67,7 @@ void initializeCardStack(struct CardStack *stack) {
 
 void shuffleCardStack(struct CardStack *stack) {
     for (int i = 0; i < stack->size; i++) {
-        int j = rand() % stack->size;
-        struct Card temp = stack->cards[i];
-        stack->cards[i] = stack->cards[j];
-        stack->cards[j] = temp;
+
     }
 }
 
