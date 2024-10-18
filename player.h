@@ -36,6 +36,14 @@ PLAYER* create_player(int id, char name[])     //create player node
 
 PLAYER* insert_player(PLAYER* head, char name[])      //inserting a new player with appended id
 {
+    static int id = 0;
+    PLAYER* newPlayer = (PLAYER*)malloc(sizeof(PLAYER));
+    strcpy(newPlayer->name, name);
+    newPlayer->id = id++;
+    newPlayer->has_shouted_uno = 0;  // Initialize the flag
+    newPlayer->next = NULL;
+    newPlayer->prev = NULL;
+    
     PLAYER* newplayer = create_player(init_id++, name);
     if(head == NULL)
     {
