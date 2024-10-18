@@ -1,102 +1,167 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <conio.h>
+
 int init_id = 0;
 char data[500];
 
-typedef struct pStr{
-    char name[20];
-    int id;
-    char played[3];
-    
-} pStr;
-
-
+// Player structure
 typedef struct player_node   
 {
     int id;
     char name[20];
     int remaining_cards;
+    int has_won;               // Indicates if the player has won (1 = won, 0 = still in game)
+    int position;              // Ranking position after a player wins
     struct player_node* next;
     struct player_node* prev;
-}PLAYER;
+} PLAYER;
 
-PLAYER* create_player(int id, char name[])     //create player node
-{
+// Function to create a new player node
+PLAYER* create_player(int id, char name[]) {
     PLAYER* new_player = (PLAYER*) malloc(sizeof(PLAYER));
     new_player->id = id;
     strcpy(new_player->name, name);
     new_player->remaining_cards = 7;
+    new_player->has_won = 0;         // Player starts the game as active
+    new_player->position = 0;        // Ranking is assigned upon winning
     new_player->next = NULL;
     new_player->prev = NULL;
     return new_player;
 }
 
-PLAYER* insert_player(PLAYER* head, char name[])      //inserting a new player with appended id
-{
-    PLAYER* newplayer = create_player(init_id++, name);
-    if(head == NULL)
-    {
-        head = newplayer;
+// Function to insert a new player in the doubly circular linked list
+PLAYER* insert_player(PLAYER* head, char name[]) {
+    PLAYER* new_player = create_player(init_id++, name);
+    if (head == NULL) {
+        head = new_player;
         head->next = head;
         head->prev = head;
-    }
-    else
-    {
-        PLAYER* curr = head->prev;
-        curr->next = newplayer;
-        newplayer->next = head;
-        newplayer->prev = curr;
-        head->prev = newplayer;
+    } else {
+        PLAYER* last = head->prev;
+        last->next = new_player;
+        new_player->next = head;
+        new_player->prev = last;
+        head->prev = new_player;
     }
     return head;
 }
 
-
-
-void display(PLAYER* head)
-{
-    if(head == NULL)
-        printf("List is empty\n");
-    else
-    {
-    PLAYER *temp = head;
-    while(temp->next != head)
-    {
-        printf("player_id: %d    player_name: %s    remaining cards: %d\n", temp->id, temp->name, temp->remaining_cards);
+// Function to display the list of players
+void display_players(PLAYER* head) {
+    if (head == NULL) {
+        printf("No players in the game.\n");
+        return;
+    }
+    PLAYER* temp = head;
+    do {
+        if (!temp->has_won) { // Only display active players
+            printf("Player ID: %d, Name: %s, Remaining Cards: %d\n", temp->id, temp->name, temp->remaining_cards);
+        }
         temp = temp->next;
-    }
-    printf("player_id: %d    player_name: %s    remaining cards: %d\n", head->prev->id, head->prev->name, head->prev->remaining_cards);
-    }
+    } while (temp != head);
 }
 
-
-void search_player_name(PLAYER* head, int id){
+// Function to search for a player by ID and display their name
+void search_player_name(PLAYER* head, int id) {
     PLAYER* current = head;
-    while (current->next != head)
-    {
-    if (current->id == id){
-        printf("%s",current->name);
-        break;
-    }
-    current = current->next;
-    }
+    do {
+        if (current->id == id) {
+            printf("Player Name: %s\n", current->name);
+            return;
+        }
+        current = current->next;
+    } while (current != head);
 }
 
+// Function to remove a player from the circular linked list
+PLAYER* remove_player(PLAYER* head, PLAYER* player) {
+    if (head == NULL || player == NULL) return head;
 
-// (Arnab:1[7],Arun:2[7])|1|Y3|B7
+    // If the player is the only one remaining
+    if (player->next == player && player->prev == player) {
+        free(player);
+        return NULL;
+    }
 
-// int main(){
-//     PLAYER* head = NULL;
-//     char name[20];
-//     for(int i=0;i<3;i++){
-//         printf("Enter name: ");
-//         scanf("%s",name);
-//         head = insert_player(head,name);
-//     }
-//     char str[1024] = {'\0'};
-//     genNamePS(head,str);
-//     printf("%s",str);
+    // If the player is the head of the list, move head pointer
+    if (head == player) {
+        head = player->next;
+    }
+
+    // Remove the player from the list
+    player->prev->next = player->next;
+    player->next->prev = player->prev;
+
+    free(player);
+    return head;
+}
+
+// Function to mark a player as having won and remove them from active play
+PLAYER* mark_player_as_winner(PLAYER* head, PLAYER* winner, int position) {
+    winner->has_won = 1;      // Mark the player as having won
+    winner->position = position; // Assign their ranking position
+
+    printf("Player %s has won! Ranking position: %d\n", winner->name, position);
     
-// }
+    // Remove them from the active list (game loop)
+    head = remove_player(head, winner);
+
+    return head;
+}
+
+// Function to play the game loop and keep track of winners
+void game_loop(PLAYER* head) {
+    int num_players = 0;
+    int rank = 1; // Ranking starts at 1
+    PLAYER* temp = head;
+
+    // Count the total number of players initially
+    do {
+        num_players++;
+        temp = temp->next;
+    } while (temp != head);
+
+    // Main game loop continues until only one player remains
+    while (num_players > 1) {
+        PLAYER* current_player = head;
+        do {
+            // Simulate the player taking a turn (this is where your actual game logic would go)
+            if (!current_player->has_won && current_player->remaining_cards <= 0) {
+                // If the player has no remaining cards, they win
+                head = mark_player_as_winner(head, current_player, rank++);
+                num_players--; // Reduce the number of active players
+            }
+            current_player = current_player->next;
+        } while (current_player != head);
+    }
+
+    // The last remaining player also wins
+    printf("Final Player Remaining: %s wins!\n", head->name);
+    head->position = rank;
+
+    // Display the final rankings
+    printf("\n--- Final Rankings ---\n");
+    temp = head;
+    do {
+        printf("Rank %d: %s\n", temp->position, temp->name);
+        temp = temp->next;
+    } while (temp != head);
+}
+
+int main() {
+    PLAYER* head = NULL;
+    char name[20];
+    
+    // Add players to the game
+    for (int i = 0; i < 4; i++) {
+        printf("Enter name of player %d: ", i + 1);
+        scanf("%s", name);
+        head = insert_player(head, name);
+    }
+
+    // Start the game loop
+    game_loop(head);
+
+    return 0;
+}

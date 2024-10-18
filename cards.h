@@ -1,173 +1,167 @@
 #include <stdio.h>
 #include <stdlib.h>
-#include <time.h>
 #include <string.h>
 
-char colors[][18] = {"\033[0;31mR\033[0m\0", "\033[0;32mG\033[0m\0", "\033[0;34mB\033[0m\0", "\033[0;33mY\033[0m\0"};
-char col[] = {'R','G','B','Y'};
-struct Card {
-    char color[19];
-    char col;
-    int value;
-};
+int init_id = 0;
+char data[500];
 
-struct CardStack {
-    struct Card cards[108];
-    int size;
-};
+// Player structure
+typedef struct player_node   
+{
+    int id;
+    char name[20];
+    int remaining_cards;
+    int has_won;               // Indicates if the player has won (1 = won, 0 = still in game)
+    int position;              // Ranking position after a player wins
+    struct player_node* next;
+    struct player_node* prev;
+} PLAYER;
 
-void initializeCardStack(struct CardStack *stack) {
-    int index = 0;
-
-    for (int i = 0; i < 4; i++) {
-        for (int value = 1; value <= 9; value++) {
-            strcpy(stack->cards[index].color,colors[i]);
-            stack->cards[index].col = col[i];
-            stack->cards[index].value = value;
-            index++;
-            strcpy(stack->cards[index].color,colors[i]);
-            stack->cards[index].col = col[i];
-            stack->cards[index].value = value;
-            index++;
-        }
-
-        strcpy(stack->cards[index].color,colors[i]);
-        stack->cards[index].col = col[i];
-        stack->cards[index].value = 0;
-        index++;
-
-        strcpy(stack->cards[index].color,colors[i]);
-        stack->cards[index].col = col[i];
-        stack->cards[index].value = 10;
-        index++;
-
-        strcpy(stack->cards[index].color,colors[i]);
-        stack->cards[index].col = col[i];
-        stack->cards[index].value = 11;
-        index++;
-
-        strcpy(stack->cards[index].color,colors[i]);
-        stack->cards[index].col = col[i];
-        stack->cards[index].value = 12;
-        index++;
-    }
-
-    for (int i = 0; i < 4; i++) {
-        strcpy(stack->cards[index].color,"N\0");
-        stack->cards[index].col = 'N';
-        stack->cards[index].value = 13;
-        index++;
-        strcpy(stack->cards[index].color,"N\0");
-        stack->cards[index].col = 'N';
-        stack->cards[index].value = 14;
-        index++;
-    }
-    stack->size = index;
+// Function to create a new player node
+PLAYER* create_player(int id, char name[]) {
+    PLAYER* new_player = (PLAYER*) malloc(sizeof(PLAYER));
+    new_player->id = id;
+    strcpy(new_player->name, name);
+    new_player->remaining_cards = 7;
+    new_player->has_won = 0;         // Player starts the game as active
+    new_player->position = 0;        // Ranking is assigned upon winning
+    new_player->next = NULL;
+    new_player->prev = NULL;
+    return new_player;
 }
 
-void shuffleCardStack(struct CardStack *stack) {
-    for (int i = 0; i < stack->size; i++) {
-
-    }
-}
-
-void distributeCards(struct CardStack *deck, struct CardStack *players, int numPlayers, int cardsPerPlayer) {
-    for (int i = 0; i < numPlayers; i++) {
-        players[i].size = 0;
-    }
-
-    int currentPlayer = 0;
-    for (int i = 0; i < numPlayers * cardsPerPlayer; i++) {
-        players[currentPlayer].cards[players[currentPlayer].size++] = deck->cards[i];
-        currentPlayer = (currentPlayer + 1) % numPlayers;
-    }
-}
-
-void printPlayerStack(struct CardStack *playerStack) {
-    int cnt = 0;
-    for (int i = 0; i < playerStack->size; i++) {
-        cnt++;
-        printf("[%s%d] ", playerStack->cards[i].color, playerStack->cards[i].value);
-    }
-    printf("\nNo. of Cards: %d\n",cnt);
-    printf("\n");
-}
-
-void printMainCardStack(struct CardStack *mainStack) {
-    printf("Main Card Stack:\n");
-    int cnt = 0;
-    for (int i = 0; i < mainStack->size; i++) {
-        cnt++;
-        printf("Color: %s, Value: %d\n", mainStack->cards[i].color, mainStack->cards[i].value);
-    }
-    printf("No. of Cards: %d\n",cnt);
-    printf("\n");
-}
-
-// Function to pop a card from the main deck and push it onto a player's deck
-void dealCard(struct CardStack *mainDeck, struct CardStack *playerDeck) {
-    if (mainDeck->size > 0) {
-        // Pop a card from the main deck
-        struct Card dealtCard = mainDeck->cards[--(mainDeck->size)];
-
-        // Push the card onto the player's deck
-        playerDeck->cards[playerDeck->size++] = dealtCard;
+// Function to insert a new player in the doubly circular linked list
+PLAYER* insert_player(PLAYER* head, char name[]) {
+    PLAYER* new_player = create_player(init_id++, name);
+    if (head == NULL) {
+        head = new_player;
+        head->next = head;
+        head->prev = head;
     } else {
-        printf("Error: Main deck is empty.\n");
+        PLAYER* last = head->prev;
+        last->next = new_player;
+        new_player->next = head;
+        new_player->prev = last;
+        head->prev = new_player;
     }
+    return head;
 }
 
-void playCard(struct CardStack *s1, struct CardStack *s2, char C, int N) {
-    int c1 = s1->size;
-    int c2 = s2->size;
-    struct Card card;
-    card.col = C;
-    card.value = N;
-    // Find the index of the card in s1
-    int indexOfCard = -1;
-    for (int i = 0; i < c1; i++) {
-        if (s1->cards[i].col == card.col && s1->cards[i].value == card.value) {
-            indexOfCard = i;
-            break;
-        }
+// Function to display the list of players
+void display_players(PLAYER* head) {
+    if (head == NULL) {
+        printf("No players in the game.\n");
+        return;
     }
-
-    // If the card is found in s1
-    if (indexOfCard != -1) {
-        // Remove the card from s1
-        struct Card removedCard = s1->cards[indexOfCard];
-        for (int i = indexOfCard; i < c1 - 1; i++) {
-            s1->cards[i] = s1->cards[i + 1];
+    PLAYER* temp = head;
+    do {
+        if (!temp->has_won) { // Only display active players
+            printf("Player ID: %d, Name: %s, Remaining Cards: %d\n", temp->id, temp->name, temp->remaining_cards);
         }
-        s1->size--;
-
-        // Append the removed card to s2
-        s2->cards[c2++] = removedCard;
-        s2->size++;
-    } else {
-        printf("Card not found in s1\n");
-    }
+        temp = temp->next;
+    } while (temp != head);
 }
 
-// int main() {
-//     srand(time(NULL));
+// Function to search for a player by ID and display their name
+void search_player_name(PLAYER* head, int id) {
+    PLAYER* current = head;
+    do {
+        if (current->id == id) {
+            printf("Player Name: %s\n", current->name);
+            return;
+        }
+        current = current->next;
+    } while (current != head);
+}
 
-//     struct CardStack mainDeck;
-//     initializeCardStack(&mainDeck);
 
-//     shuffleCardStack(&mainDeck);
+PLAYER* remove_player(PLAYER* head, PLAYER* player) {
+    if (head == NULL || player == NULL) return head;
 
-//     int numPlayers = 4;
-//     int cardsPerPlayer = 7;
+    
+    if (player->next == player && player->prev == player) {
+        free(player);
+        return NULL;
+    }
 
-//     struct CardStack players[numPlayers];
+    
+    if (head == player) {
+        head = player->next;
+    }
 
-//     distributeCards(&mainDeck, players, numPlayers, cardsPerPlayer);
+    
+    player->prev->next = player->next;
+    player->next->prev = player->prev;
 
-//     printPlayerStack(&players[0], "Player 1");
-//     printPlayerStack(&players[0], "Player 2");
+    free(player);
+    return head;
+}
 
-//     printMainCardStack(&mainDeck);
 
-//     return 0;
-// }
+PLAYER* mark_player_as_winner(PLAYER* head, PLAYER* winner, int position) {
+    winner->has_won = 1;      
+    winner->position = position; 
+
+    printf("Player %s has won! Ranking position: %d\n", winner->name, position);
+    
+    
+    head = remove_player(head, winner);
+
+    return head;
+}
+
+
+void game_loop(PLAYER* head) {
+    int num_players = 0;
+    int rank = 1; 
+    PLAYER* temp = head;
+
+    
+    do {
+        num_players++;
+        temp = temp->next;
+    } while (temp != head);
+
+    
+    while (num_players > 1) {
+        PLAYER* current_player = head;
+        do {
+            
+            if (!current_player->has_won && current_player->remaining_cards <= 0) {
+                
+                head = mark_player_as_winner(head, current_player, rank++);
+                num_players--; 
+            }
+            current_player = current_player->next;
+        } while (current_player != head);
+    }
+
+
+    printf("Final Player Remaining: %s wins!\n", head->name);
+    head->position = rank;
+
+    // Display the final rankings
+    printf("\n--- Final Rankings ---\n");
+    temp = head;
+    do {
+        printf("Rank %d: %s\n", temp->position, temp->name);
+        temp = temp->next;
+    } while (temp != head);
+}
+
+int main() {
+    PLAYER* head = NULL;
+    char name[20];
+    
+    // Add players to the game
+    for (int i = 0; i < 4; i++) {
+        printf("Enter name of player %d: ", i + 1);
+        scanf("%s", name);
+        head = insert_player(head, name);
+    }
+
+    // Start the game loop
+    game_loop(head);
+
+    return 0;
+}
