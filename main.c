@@ -4,7 +4,15 @@
 #include <string.h>
 #include "player.h"
 #include "cards.h"
+#ifdef _WIN32
+#include <io.h>
+#define access _access
+
+#else
 #include <unistd.h>
+#endif
+
+#define NO_OF_START_CARDS 3
 
 void display_how_to_play()
 {
@@ -55,11 +63,16 @@ int canPlay(char C, int N, struct CardStack stk,struct Card last){
     for (int i = 0; i < stk.size; i++) {
         if((stk.cards[i].col == C) && (stk.cards[i].value == N)) {chk1 = 1;break;}
     }
-    if((last.col == C) || (last.value == N) || (last.col = 'N')) chk2 = 1;
+    if((last.col == C) || (last.value == N) || (last.col == 'N')) chk2 = 1;
 
     if(chk1 && chk2){
         return 1;
-    }else return 0;
+    }else 
+    {
+        printf("The card is invalid, please plug a VALID Card or DRAW one");
+        sleep(2);
+        return 0;
+    }
 }
 
 int main(){
@@ -90,14 +103,16 @@ int main(){
             printf("=== PLAYERS ==========================\n");
             printf("Enter number of players in session: ");
             scanf("%d",&number_of_players);
+            int active_players = number_of_players;
             
             for(int i=0;i<number_of_players;i++){
                 printf("[Player %d] Name: ",i+1);
                 scanf("%s",name);
                 head = insert_player(head,name);
             }
-            distributeCards(&mainDeck, players, number_of_players, 7);
+            distributeCards(&mainDeck, players, number_of_players, NO_OF_START_CARDS);
             int win = -1;
+            int winner = 0;
             PLAYER* aux = head;
             int wild = 0;
             dealCard(&mainDeck,&discardPile);
@@ -117,93 +132,105 @@ int main(){
                     if(canPlay(C,N,players[aux->id],discardPile.cards[discardPile.size-1])|| wild){
                         playCard(&players[aux->id],&discardPile,C,N);
                         if(players[aux->id].size != 0){
-                            if(discardPile.cards[discardPile.size-1].value == 10){
-                                if(dir==0)aux=aux->next;
-                                else aux= aux->prev;
-                            }
-                            if(discardPile.cards[discardPile.size-1].value == 11){
-                                if(dir == 0)dir = 1;
-                                else dir = 0;
-                            }
-                            if(discardPile.cards[discardPile.size-1].value == 12){
-                                if(dir == 0){
-                                    dealCard(&mainDeck,&players[aux->next->id]);
-                                    dealCard(&mainDeck,&players[aux->next->id]);
-                                }else{
-                                    dealCard(&mainDeck,&players[aux->prev->id]);
-                                    dealCard(&mainDeck,&players[aux->prev->id]);
+                            printf("%s",aux->name);
+                            if(aux->active == 1){
+                                if(discardPile.cards[discardPile.size-1].value == 10){
+                                    if(dir==0)aux=aux->next;
+                                    else aux= aux->prev;
                                 }
-                                if(dir==0)aux=aux->next;
-                                else aux= aux->prev;
-                            }
-                            if(discardPile.cards[discardPile.size-1].value == 13){
-                                printf("Enter Color [R,B,G,Y]: ");
-                                scanf(" %c",&C);
-                                switch(C){
-                                    case 'R':
-                                    strcpy(discardPile.cards[discardPile.size-1].color,"\033[0;31mR\033[0m");
-                                    discardPile.cards[discardPile.size-1].col = 'R';
-                                    break;
-                                    case 'B':
-                                    strcpy(discardPile.cards[discardPile.size-1].color,"\033[0;34mB\033[0m");
-                                    discardPile.cards[discardPile.size-1].col = 'B';
-                                    break;
-                                    case 'G':
-                                    strcpy(discardPile.cards[discardPile.size-1].color,"\033[0;32mG\033[0m");
-                                    discardPile.cards[discardPile.size-1].col = 'G';
-                                    break;
-                                    case 'Y':
-                                    strcpy(discardPile.cards[discardPile.size-1].color,"\033[0;33mY\033[0m");
-                                    discardPile.cards[discardPile.size-1].col = 'Y';
-                                    break;
-                                    default:
-                                    strcpy(discardPile.cards[discardPile.size-1].color,"\033[0;31mR\033[0m");
-                                    discardPile.cards[discardPile.size-1].col = 'R';
-                                    break;
+                                if(discardPile.cards[discardPile.size-1].value == 11){
+                                    if(dir == 0)dir = 1;
+                                    else dir = 0;
                                 }
-                                
-                            }
-                            if(discardPile.cards[discardPile.size-1].value == 14){
-                                if(dir == 0){
-                                    dealCard(&mainDeck,&players[aux->next->id]);
-                                    dealCard(&mainDeck,&players[aux->next->id]);
-                                    dealCard(&mainDeck,&players[aux->next->id]);
-                                    dealCard(&mainDeck,&players[aux->next->id]);
-                                }else{
-                                    dealCard(&mainDeck,&players[aux->prev->id]);
-                                    dealCard(&mainDeck,&players[aux->prev->id]);
-                                    dealCard(&mainDeck,&players[aux->prev->id]);
-                                    dealCard(&mainDeck,&players[aux->prev->id]);
+                                if(discardPile.cards[discardPile.size-1].value == 12){
+                                    if(dir == 0){
+                                        dealCard(&mainDeck,&players[aux->next->id]);
+                                        dealCard(&mainDeck,&players[aux->next->id]);
+                                    }else{
+                                        dealCard(&mainDeck,&players[aux->prev->id]);
+                                        dealCard(&mainDeck,&players[aux->prev->id]);
+                                    }
+                                    if(dir==0)aux=aux->next;
+                                    else aux= aux->prev;
                                 }
-                                printf("Enter Color [R,B,G,Y]: ");
-                                scanf(" %c",&C);
-                                switch(C){
-                                    case 'R':
-                                    strcpy(discardPile.cards[discardPile.size-1].color,"\033[0;31mR\033[0m");
-                                    discardPile.cards[discardPile.size-1].col = 'R';
-                                    break;
-                                    case 'B':
-                                    strcpy(discardPile.cards[discardPile.size-1].color,"\033[0;34mB\033[0m");
-                                    discardPile.cards[discardPile.size-1].col = 'B';
-                                    break;
-                                    case 'G':
-                                    strcpy(discardPile.cards[discardPile.size-1].color,"\033[0;32mG\033[0m");
-                                    discardPile.cards[discardPile.size-1].col = 'G';
-                                    break;
-                                    case 'Y':
-                                    strcpy(discardPile.cards[discardPile.size-1].color,"\033[0;33mY\033[0m");
-                                    discardPile.cards[discardPile.size-1].col = 'Y';
-                                    break;
-                                    default:
-                                    strcpy(discardPile.cards[discardPile.size-1].color,"\033[0;31mR\033[0m");
-                                    discardPile.cards[discardPile.size-1].col = 'R';
-                                    break;
+                                if(discardPile.cards[discardPile.size-1].value == 13){
+                                    printf("Enter Color [R,B,G,Y]: ");
+                                    scanf(" %c",&C);
+                                    switch(C){
+                                        case 'R':
+                                        strcpy(discardPile.cards[discardPile.size-1].color,"\033[0;31mR\033[0m");
+                                        discardPile.cards[discardPile.size-1].col = 'R';
+                                        break;
+                                        case 'B':
+                                        strcpy(discardPile.cards[discardPile.size-1].color,"\033[0;34mB\033[0m");
+                                        discardPile.cards[discardPile.size-1].col = 'B';
+                                        break;
+                                        case 'G':
+                                        strcpy(discardPile.cards[discardPile.size-1].color,"\033[0;32mG\033[0m");
+                                        discardPile.cards[discardPile.size-1].col = 'G';
+                                        break;
+                                        case 'Y':
+                                        strcpy(discardPile.cards[discardPile.size-1].color,"\033[0;33mY\033[0m");
+                                        discardPile.cards[discardPile.size-1].col = 'Y';
+                                        break;
+                                        default:
+                                        strcpy(discardPile.cards[discardPile.size-1].color,"\033[0;31mR\033[0m");
+                                        discardPile.cards[discardPile.size-1].col = 'R';
+                                        break;
+                                    }
+                                    
                                 }
-                                if(dir==0)aux=aux->next;
-                                else aux= aux->prev;
+                                if(discardPile.cards[discardPile.size-1].value == 14){
+                                    if(dir == 0){
+                                        dealCard(&mainDeck,&players[aux->next->id]);
+                                        dealCard(&mainDeck,&players[aux->next->id]);
+                                        dealCard(&mainDeck,&players[aux->next->id]);
+                                        dealCard(&mainDeck,&players[aux->next->id]);
+                                    }else{
+                                        dealCard(&mainDeck,&players[aux->prev->id]);
+                                        dealCard(&mainDeck,&players[aux->prev->id]);
+                                        dealCard(&mainDeck,&players[aux->prev->id]);
+                                        dealCard(&mainDeck,&players[aux->prev->id]);
+                                    }
+                                    printf("Enter Color [R,B,G,Y]: ");
+                                    scanf(" %c",&C);
+                                    switch(C){
+                                        case 'R':
+                                        strcpy(discardPile.cards[discardPile.size-1].color,"\033[0;31mR\033[0m");
+                                        discardPile.cards[discardPile.size-1].col = 'R';
+                                        break;
+                                        case 'B':
+                                        strcpy(discardPile.cards[discardPile.size-1].color,"\033[0;34mB\033[0m");
+                                        discardPile.cards[discardPile.size-1].col = 'B';
+                                        break;
+                                        case 'G':
+                                        strcpy(discardPile.cards[discardPile.size-1].color,"\033[0;32mG\033[0m");
+                                        discardPile.cards[discardPile.size-1].col = 'G';
+                                        break;
+                                        case 'Y':
+                                        strcpy(discardPile.cards[discardPile.size-1].color,"\033[0;33mY\033[0m");
+                                        discardPile.cards[discardPile.size-1].col = 'Y';
+                                        break;
+                                        default:
+                                        strcpy(discardPile.cards[discardPile.size-1].color,"\033[0;31mR\033[0m");
+                                        discardPile.cards[discardPile.size-1].col = 'R';
+                                        break;
+                                    }
+                                    if(dir==0)aux=aux->next;
+                                    else aux= aux->prev;
+                                }
                             }
-                        }else{
-                            win = aux->id;
+                        }
+                        else{
+                            if(active_players==number_of_players){
+                                winner = aux->id;
+                            }
+                            aux->active = 0;
+                            active_players--;
+                            printf("%d", active_players);
+                            if(active_players == 1){
+                                win = winner;
+                            }
                             break;
                         }
                         if(dir==0)aux=aux->next;
